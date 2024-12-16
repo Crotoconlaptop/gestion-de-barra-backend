@@ -11,9 +11,9 @@ const PedidoSchema = new mongoose.Schema({
     },
   ],
   comentarios: { type: String },
+  recibidoPor: { type: String },
   estado: { type: String, default: "Pendiente" }, // Estado general del pedido: Pendiente o Recibido
   fecha: { type: Date, default: Date.now }, // Fecha de creación del pedido
-  recibidoPor: { type: String },
 });
 
 module.exports = mongoose.model("Pedido", PedidoSchema);
