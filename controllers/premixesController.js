@@ -1,4 +1,3 @@
-// **premixesController.js**
 const Premix = require("../models/Premix");
 
 // Obtener todos los premixes
@@ -7,6 +6,7 @@ exports.obtenerPremixes = async (req, res) => {
     const premixes = await Premix.find();
     res.json(premixes);
   } catch (error) {
+    console.error("Error al obtener los premixes:", error.message);
     res.status(500).json({ error: "Error al obtener los premixes." });
   }
 };
@@ -14,26 +14,46 @@ exports.obtenerPremixes = async (req, res) => {
 // Crear un nuevo premix
 exports.crearPremix = async (req, res) => {
   try {
-    const nuevoPremix = new Premix(req.body);
+    const { nombre, descripcion, imagen, ingredientes, preparacion, pendiente } = req.body;
+
+    if (!nombre || !descripcion || !imagen || !ingredientes || !preparacion) {
+      return res.status(400).json({ error: "Todos los campos son obligatorios." });
+    }
+
+    if (!Array.isArray(ingredientes)) {
+      return res.status(400).json({ error: "Los ingredientes deben ser un arreglo válido." });
+    }
+
+    const nuevoPremix = new Premix({ nombre, descripcion, imagen, ingredientes, preparacion, pendiente: false });
     await nuevoPremix.save();
+
     res.status(201).json(nuevoPremix);
   } catch (error) {
+    console.error("Error al crear el premix:", error.message);
     res.status(500).json({ error: "Error al crear el premix." });
   }
 };
 
-// Actualizar un premix
-exports.actualizarPremix = async (req, res) => {
+// Cambiar el estado de un premix (pendiente o listo)
+exports.cambiarEstadoPremix = async (req, res) => {
   try {
     const { id } = req.params;
-    const premixActualizado = await Premix.findByIdAndUpdate(id, req.body, { new: true });
+    const { pendiente } = req.body; // Leer el nuevo estado desde el cuerpo de la solicitud
 
-    if (!premixActualizado)
+    // Buscar el premix por ID
+    const premix = await Premix.findById(id);
+    if (!premix) {
       return res.status(404).json({ error: "Premix no encontrado." });
+    }
 
-    res.json(premixActualizado);
+    // Actualizar el estado
+    premix.pendiente = pendiente;
+    await premix.save();
+
+    res.status(200).json(premix); // Enviar el premix actualizado al cliente
   } catch (error) {
-    res.status(500).json({ error: "Error al actualizar el premix." });
+    console.error("Error al cambiar el estado del premix:", error.message);
+    res.status(500).json({ error: "Error al cambiar el estado del premix." });
   }
 };
 
@@ -43,11 +63,13 @@ exports.eliminarPremix = async (req, res) => {
     const { id } = req.params;
     const premixEliminado = await Premix.findByIdAndDelete(id);
 
-    if (!premixEliminado)
+    if (!premixEliminado) {
       return res.status(404).json({ error: "Premix no encontrado." });
+    }
 
     res.json({ message: "Premix eliminado correctamente." });
   } catch (error) {
+    console.error("Error al eliminar el premix:", error.message);
     res.status(500).json({ error: "Error al eliminar el premix." });
   }
 };
