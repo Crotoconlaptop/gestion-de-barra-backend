@@ -1,10 +1,35 @@
 const Premix = require("../models/Premix");
 
-// Obtener todos los premixes
+// Obtener todos los premixes con paginación
 exports.obtenerPremixes = async (req, res) => {
   try {
-    const premixes = await Premix.find();
-    res.json(premixes);
+    const { page = 1, limit = 10 } = req.query;
+
+    // Validar que los parámetros de paginación sean números positivos
+    const pageNumber = parseInt(page, 10);
+    const limitNumber = parseInt(limit, 10);
+
+    if (isNaN(pageNumber) || pageNumber <= 0 || isNaN(limitNumber) || limitNumber <= 0) {
+      return res.status(400).json({ error: "Parámetros de paginación inválidos." });
+    }
+
+    // Calcular el número de documentos a omitir y obtener los datos
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const [premixes, total] = await Promise.all([
+      Premix.find().skip(skip).limit(limitNumber),
+      Premix.countDocuments(),
+    ]);
+
+    res.status(200).json({
+      premixes,
+      pagination: {
+        total,
+        page: pageNumber,
+        limit: limitNumber,
+        totalPages: Math.ceil(total / limitNumber),
+      },
+    });
   } catch (error) {
     console.error("Error al obtener los premixes:", error.message);
     res.status(500).json({ error: "Error al obtener los premixes." });
@@ -24,9 +49,16 @@ exports.crearPremix = async (req, res) => {
       return res.status(400).json({ error: "Los ingredientes deben ser un arreglo válido." });
     }
 
-    const nuevoPremix = new Premix({ nombre, descripcion, imagen, ingredientes, preparacion, pendiente: false });
-    await nuevoPremix.save();
+    const nuevoPremix = new Premix({
+      nombre,
+      descripcion,
+      imagen,
+      ingredientes,
+      preparacion,
+      pendiente: false,
+    });
 
+    await nuevoPremix.save();
     res.status(201).json(nuevoPremix);
   } catch (error) {
     console.error("Error al crear el premix:", error.message);
@@ -38,7 +70,7 @@ exports.crearPremix = async (req, res) => {
 exports.cambiarEstadoPremix = async (req, res) => {
   try {
     const { id } = req.params;
-    const { pendiente } = req.body; // Leer el nuevo estado desde el cuerpo de la solicitud
+    const { pendiente } = req.body;
 
     // Buscar el premix por ID
     const premix = await Premix.findById(id);
@@ -50,7 +82,7 @@ exports.cambiarEstadoPremix = async (req, res) => {
     premix.pendiente = pendiente;
     await premix.save();
 
-    res.status(200).json(premix); // Enviar el premix actualizado al cliente
+    res.status(200).json(premix);
   } catch (error) {
     console.error("Error al cambiar el estado del premix:", error.message);
     res.status(500).json({ error: "Error al cambiar el estado del premix." });

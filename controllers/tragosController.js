@@ -1,14 +1,39 @@
 const Trago = require("../models/Trago");
 
+// Obtener todos los tragos con paginación
 exports.obtenerTragos = async (req, res) => {
   try {
-    const tragos = await Trago.find();
-    res.status(200).json(tragos);
+    const { page = 1, limit = 10 } = req.query;
+
+    // Validar que los parámetros de paginación sean números positivos
+    const pageNumber = parseInt(page, 10);
+    const limitNumber = parseInt(limit, 10);
+    if (isNaN(pageNumber) || pageNumber <= 0 || isNaN(limitNumber) || limitNumber <= 0) {
+      return res.status(400).json({ error: "Parámetros de paginación inválidos." });
+    }
+
+    // Calcular el número de documentos a omitir y obtener los datos
+    const skip = (pageNumber - 1) * limitNumber;
+    const [tragos, total] = await Promise.all([
+      Trago.find().skip(skip).limit(limitNumber),
+      Trago.countDocuments(),
+    ]);
+
+    res.status(200).json({
+      tragos,
+      pagination: {
+        total,
+        page: pageNumber,
+        limit: limitNumber,
+        totalPages: Math.ceil(total / limitNumber),
+      },
+    });
   } catch (error) {
     res.status(500).json({ error: "Error al obtener los tragos." });
   }
 };
 
+// Crear un nuevo trago
 exports.crearTrago = async (req, res) => {
   try {
     console.log("Datos recibidos en el backend:", req.body);
@@ -34,8 +59,7 @@ exports.crearTrago = async (req, res) => {
   }
 };
 
-
-
+// Eliminar un trago
 exports.eliminarTrago = async (req, res) => {
   try {
     const { id } = req.params;
