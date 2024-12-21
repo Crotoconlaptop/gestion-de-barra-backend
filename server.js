@@ -30,13 +30,13 @@ app.use(
   })
 );
 app.use(morgan("combined")); // Logs HTTP
-app.use(
-  rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutos
-    max: 100, // Máximo de 100 solicitudes por IP
-    message: "Demasiadas solicitudes desde esta IP, por favor intenta de nuevo más tarde.",
-  })
-);
+// app.use(
+//   rateLimit({
+//     windowMs: 15 * 60 * 1000, // 15 minutos
+//     max: 100, // Máximo de 100 solicitudes por IP
+//   })
+// );
+
 
 // Rutas
 app.use("/api/pedidos", require("./routes/pedidosRoutes"));
